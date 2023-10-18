@@ -1,0 +1,21 @@
+{
+  "name": "strapi-client",
+  "version": "0.0.1",
+  "description": "Client to handle strapi calls",
+  "main": "dist/index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "npx tsc"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "lodash": "^4.17.21",
+    "qs": "^6.11.2",
+    "typescript": "^5.2.2"
+  },
+  "devDependencies": {
+    "@types/lodash": "^4.14.200",
+    "@types/qs": "^6.9.8"
+  }
+}
