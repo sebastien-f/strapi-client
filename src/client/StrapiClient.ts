@@ -1,57 +1,8 @@
 import { isEmpty, isString, isObject } from "lodash";
 import makeFetchOptions, { Methods } from "./makeFetchOptions";
+import { StrapiClientOptions } from "./StrapiClientOptions";
 
-type StrapiClientOptions = {
-    /** Base url, without the api endpoint, ideally not ending with a /. Default http://localhost:1337 */
-    baseUrl?:string;
-    /** Api prefix, default /api */
-    prefix?:string;
-    /** Display in the console the time used to run the query, default false */
-    showRunTime?:boolean;
-}
 
-type StrapiClientError = {
-    type:"error",
-    error:string;
-    url:string;
-    options:RequestInit;
-    statusCode?:number;
-    statusMessage?:string;
-    /** Execution time, in seconds */
-    executionTime?:number;
-}
-
-type StrapiClientJson<T> = {
-    type:"json",
-    json:T,
-    executionTime?:number;
-}
-
-type StrapiClientText = {
-    type:"text",
-    text:string,
-    executionTime?:number;
-
-}
-
-type AuthResponse = {
-    "jwt": string,
-    "user": AuthUser,
-}
-
-type AuthUser = {
-    "blocked": boolean,
-    "confirmed": boolean,
-    "createdAt": string,
-    "email": string,
-    "id": number,
-    "provider": string,
-    "uid": string,
-    "updatedAt": string,
-    "username": string,
-}
-
-type StrapiClientFetchResult<T> = StrapiClientError|StrapiClientJson<T>|StrapiClientText;
 
 const defaultOptions:StrapiClientOptions = {
     baseUrl:"http://localhost:1337",
@@ -92,19 +43,9 @@ class StrapiClient {
 
         const result = await this.fetch<AuthUser>(url, options);
 
-        if(result.type == "error") {
-            console.error("getMe error", result);
-            throw new Error("getMe error");
-        }
-
         if(result.type == "text") {
             console.error("getMe text error", result);
             throw new Error("getMe error");
-        }
-
-        if(result.type != "json") {
-            console.error("getMe unknown error", result);
-            throw new Error("getMe error, unknown case");
         }
 
         console.log(`[getMe] ran in ${result.executionTime} seconds.`);
@@ -124,20 +65,11 @@ class StrapiClient {
 
         const result = await this.fetch<AuthResponse>(url, options);
 
-        if(result.type == "error") {
-            console.error("localAuth error", result);
-            throw new Error("localAuth error");
-        }
-
         if(result.type == "text") {
             console.error("localAuth text error", result);
             throw new Error("localAuth error");
         }
 
-        if(result.type != "json") {
-            console.error("localAuth unknown error", result);
-            throw new Error("localAuth error, unknown case");
-        }
 
         console.log(`[localAuth] ran in ${result.executionTime} seconds.`);
 
@@ -157,22 +89,13 @@ class StrapiClient {
 
         const result = await this.fetch<TResponse>(url, options);
 
-        if(result.type == "error") {
-            console.error("run error", result);
-            throw new Error("run error");
-        }
-
         if(result.type == "text") {
             console.error("run text error", result);
-            throw new Error("run error");
+            const err = this.processError(result.text, undefined, result.executionTime, url);
+            throw err;
         }
 
-        if(result.type != "json") {
-            console.error("run unknown error", result);
-            throw new Error("run error, unknown case");
-        }
-
-        if(this.options.showRunTime) console.log(`[run] ran in ${result.executionTime} seconds.`);
+        if(this.options.showRunTime) console.log(`[Strapi Client] ran in ${result.executionTime} seconds.`);
 
         return result.json;
     }
@@ -183,70 +106,112 @@ class StrapiClient {
 
         try {
             response = await fetch(url, options);
-            if(!response.ok) {
-                const clone = response.clone();
-                try {
-                    const jsonError = await response.json()
-                    throw new Error(jsonError);
-                } catch {
-                    const txtError = await clone.text();
-                    throw new Error(txtError);
-                }
-            }
-
             const end = new Date().getTime();
             const executionTime = (end-s)/1000;
-
             const clone = response.clone();
-            try {
-                const jsonResult = await response.json()
-                return {
-                    type:"json",
-                    json:jsonResult,
-                    executionTime
-                }
-            } catch {
-                const textResult = await clone.text();
-                return {
-                    type:"text",
-                    text:textResult,
-                    executionTime
+
+            if(response.ok) {
+                const clone = response.clone();
+                try {
+                    const jsonResult = await response.json()
+                    return {
+                        type:"json",
+                        json:jsonResult,
+                        executionTime
+                    }
+                } catch {
+                    const textResult = await clone.text();
+                    return {
+                        type:"text",
+                        text:textResult,
+                        executionTime
+                    }
                 }
             }
 
+            // response is not ok, let's try to see what it says
+            // in any case we throw it to let it be processed properly
+            try {
+                const jsonError = await response.json()
+                throw new Error(jsonError);
+            } catch {
+                const txtError = await clone.text();
+                throw new Error(txtError);
+            }
 
         } catch(error) {
             const end = new Date().getTime();
-            const e:Partial<StrapiClientError> = {
-                type:"error",
-                url,
-                options,
-                executionTime:(end - s) / 1000,
-            };
+            const executionTime = (end - s) / 1000;
 
-            if(isString(error)) {
-                e.error = error;
-            } else if(isObject(error)) {
-                const anyError = error as any;
-                if(anyError.error) {
-                    e.error = anyError.error;
-                } else if(anyError.message) {
-                    e.error = anyError.message;
-                } else {
-                    e.error = JSON.stringify(anyError);
-                }
-            }
+            const err = this.processError(error, response, executionTime, url);
 
-            if(response) {
-                e.statusCode = response.status;
-                e.statusMessage = response.statusText;
-            }
-
-            return e as StrapiClientError;
+            throw err;
         }
     }
 
+    private processError(error:any, response?:Response, executionTime?:number, url?:string) {
+        let errorMessage = null;
+
+        if(isString(error)) {
+            errorMessage = `[Strapi Client] ${error}`;
+        } else if(isObject(error)) {
+            const anyError = error as any;
+            if(anyError.error) {
+                errorMessage = anyError.error;
+            } else if(anyError.message) {
+                errorMessage = anyError.message;
+            } else {
+                errorMessage = "[Strapi Client] error: see error details";
+            }
+        } else {
+            errorMessage = "[Strapi Client] unknown error"
+        }
+
+        const err = new StrapiError(errorMessage);
+        err.executionTime = executionTime;
+        err.url = url;
+
+        if(response) {
+            err.statusCode = response.status;
+            err.statusMessage = response.statusText;
+        }
+
+        return err;
+    }
 
 }
+
+
+type StrapiClientJson<T> = {
+    type:"json",
+    json:T,
+    executionTime?:number;
+}
+
+type StrapiClientText = {
+    type:"text",
+    text:string,
+    executionTime?:number;
+
+}
+
+type AuthResponse = {
+    "jwt": string,
+    "user": AuthUser,
+}
+
+type AuthUser = {
+    "blocked": boolean,
+    "confirmed": boolean,
+    "createdAt": string,
+    "email": string,
+    "id": number,
+    "provider": string,
+    "uid": string,
+    "updatedAt": string,
+    "username": string,
+}
+
+type StrapiClientFetchResult<T> = StrapiClientJson<T>|StrapiClientText;
 
 export { StrapiClient };
