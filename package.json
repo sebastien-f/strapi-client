@@ -1,21 +1,28 @@
 {
   "name": "@sebastien-f/strapi-client",
-  "version": "0.0.2",
+  "version": "0.0.22",
   "description": "Client to handle strapi calls",
   "main": "dist/index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "npx tsc"
+    "test": "npx jest",
+    "build": "npx tsc",
+    "package": "npm run build && npm pack",
+    "dopublish": "npm run build && npm publish --access public",
+    "tscheck": "tsc -p ."
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
     "lodash": "^4.17.21",
     "qs": "^6.11.2",
-    "typescript": "^5.2.2"
+    "typescript": "^5.2.2",
+    "urlcat": "^3.1.0"
   },
   "devDependencies": {
+    "@types/jest": "^29.5.6",
     "@types/lodash": "^4.14.200",
-    "@types/qs": "^6.9.8"
+    "@types/qs": "^6.9.8",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.1.1"
   }
 }

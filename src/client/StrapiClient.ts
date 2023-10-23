@@ -1,20 +1,33 @@
 import { isEmpty, isString, isObject } from "lodash";
 import makeFetchOptions, { Methods } from "./makeFetchOptions";
 import { StrapiClientOptions } from "./StrapiClientOptions";
-
-
+import { StrapiError } from "./StrapiError";
+import { BaseOperation } from "../operations/BaseOperation";
+import { BaseRequestModifier } from "../modifiers/BaseRequestModifier";
+import { apiBaseUrl } from "../modifiers/apiBaseUrl";
+import { apiPrefix } from "../modifiers/apiPrefix";
+import { run } from "./run";
+import { apiEndpoint } from "../modifiers/apiEndpoint";
+import { get } from "../operations/get";
+import { bodyValue } from "../modifiers/bodyValue";
+import { method } from "../modifiers/method";
+import { raw } from "../operations/raw";
+import { jsonContentType } from "../modifiers/contentType";
+import { JwtModifier } from "../modifiers/withJWT";
 
 const defaultOptions:StrapiClientOptions = {
     baseUrl:"http://localhost:1337",
     prefix:"/api/",
     showRunTime:false,
+    keepFullAuthToken:false,
 }
 
 class StrapiClient {
-    private apiUrl:string;
+    /** @deprecated */
     private options:StrapiClientOptions;
     private jwToken:string = null as any as string;
     private user:AuthUser = null as any as AuthUser;
+    private clientModifiers:Array<BaseRequestModifier> = [];
 
     public constructor(options:StrapiClientOptions=defaultOptions) {
         options = {
@@ -27,158 +40,95 @@ class StrapiClient {
         if(!baseUrl) throw new Error();
         if(!prefix) throw new Error();
 
-        if(baseUrl.endsWith("/")) {
-            baseUrl = options.baseUrl = baseUrl.substring(0, baseUrl.length - 1);
-        }
-        if(!prefix.startsWith("/")) prefix = "/" + prefix;
-        if(!prefix.endsWith("/")) prefix += "/";
+        this.clientModifiers.push(apiBaseUrl(baseUrl));
+        this.clientModifiers.push(apiPrefix(prefix));
 
-        this.apiUrl = baseUrl + prefix;
         this.options = options;
     }
 
-    public async getMe(jwToken:string) {
-        const url = this.apiUrl + "users/me";
-        const options = makeFetchOptions("GET", null, jwToken);
+    /** @deprecated */
+    // public async getMe<T>(jwToken:string):Promise<T> {
+    //     const url = this.apiUrl + "users/me";
+    //     const options = makeFetchOptions("GET", null, jwToken);
 
-        const result = await this.fetch<AuthUser>(url, options);
+    //     const result = await this.fetch<AuthUser>(url, options);
 
-        if(result.type == "text") {
-            console.error("getMe text error", result);
-            throw new Error("getMe error");
-        }
+    //     if(result.type == "text") {
+    //         const err = this.processError(result.text, undefined, result.executionTime, url);
+    //         throw err;
+    //     }
 
-        console.log(`[getMe] ran in ${result.executionTime} seconds.`);
+    //     if(this.options.showRunTime) console.log(`[Strapi Client] getMe ran in ${result.executionTime} seconds.`);
 
-        this.jwToken = jwToken;
-        this.user = result.json;
+    //     this.jwToken = jwToken;
+    //     this.user = result.json;
 
-        return result.json;
+    //     return result.json as T;
+    // }
+
+    public logout() {
+        this.jwToken = null as any as string;
+        this.user = null as any as AuthUser;
     }
 
-    public async localAuth(email:string, password:string) {
-        const url = this.apiUrl + "auth/local";
-        const options = makeFetchOptions("POST", {
-            identifier:email,
-            password:password,
-        });
+    public async localAuth(email:string, password:string, extraModifiers:Array<BaseRequestModifier> = []): Promise<{ jwt:string, user:AuthUser }> {
+        const meRequest = raw([
+            apiEndpoint("auth/local"),
+            bodyValue("identifier", email),
+            bodyValue("password", password),
+            jsonContentType(),
+            method("POST"),
+            ...extraModifiers,
+        ])
 
-        const result = await this.fetch<AuthResponse>(url, options);
+        try {
+            const r = await run(meRequest, this.clientModifiers);
 
-        if(result.type == "text") {
-            console.error("localAuth text error", result);
-            throw new Error("localAuth error");
+            if(this.options.showRunTime) console.log(`[localAuth] ran in ${r.executionTime} seconds.`);
+
+            if(r.type == "text")  {
+                const sErr = new StrapiError("Local auth error: " + r.text);
+                sErr.executionTime = r.executionTime;
+                throw sErr;
+            }
+
+            this.jwToken = r.json.jwt;
+            this.user = r.json.user;
+
+            this.setJwTokenModifier(this.jwToken, false);
+
+            return r.json as { jwt:string, user:AuthUser };
+
+        } catch(error) {
+            throw error;
         }
-
-
-        console.log(`[localAuth] ran in ${result.executionTime} seconds.`);
-
-        this.jwToken = result.json.jwt;
-        this.user = result.json.user;
-
-        return result.json;
     }
 
     public setJwtTokenIfNone(jwToken:string) {
-        if(!this.jwToken) this.jwToken = jwToken;
+        this.setJwTokenModifier(jwToken);
     }
 
-    public async run<TResponse, TBody=any>(apiId:string, method:Methods, queryString:string|null, body:TBody, entryId?:number):Promise<TResponse> {
-        const url = this.apiUrl + apiId + (entryId == null ? "" : `/${entryId}`) + (isEmpty(queryString) ? "" : `?${queryString}`);
-        const options = makeFetchOptions(method, body, this.jwToken);
-
-        const result = await this.fetch<TResponse>(url, options);
-
-        if(result.type == "text") {
-            console.error("run text error", result);
-            const err = this.processError(result.text, undefined, result.executionTime, url);
-            throw err;
+    private setJwTokenModifier(jwtToken:string, onlyIfMissing:boolean = true) {
+        let jwtModifierIndex = this.clientModifiers.findIndex(x => x instanceof JwtModifier);
+        if(jwtModifierIndex === -1) {
+            // modifier is missing, we add it in that case
+            this.clientModifiers.push(new JwtModifier(jwtToken));
+        } else if(!onlyIfMissing) {
+            // it exists, we only replace it if appropriate
+            this.clientModifiers[jwtModifierIndex] = new JwtModifier(jwtToken);
         }
-
-        if(this.options.showRunTime) console.log(`[Strapi Client] ran in ${result.executionTime} seconds.`);
-
-        return result.json;
     }
 
-    private async fetch<T>(url:string, options:RequestInit):Promise<StrapiClientFetchResult<T>> {
-        let response:Response = null as any as Response;
-        const s = new Date().getTime();
-
+    public async run<T>(op:BaseOperation<T>):Promise<T> {
         try {
-            response = await fetch(url, options);
-            const end = new Date().getTime();
-            const executionTime = (end-s)/1000;
-            const clone = response.clone();
+            const r = await run(op, this.clientModifiers);
+            if(r.type == "json") return r.json as T;
 
-            if(response.ok) {
-                const clone = response.clone();
-                try {
-                    const jsonResult = await response.json()
-                    return {
-                        type:"json",
-                        json:jsonResult,
-                        executionTime
-                    }
-                } catch {
-                    const textResult = await clone.text();
-                    return {
-                        type:"text",
-                        text:textResult,
-                        executionTime
-                    }
-                }
-            }
-
-            // response is not ok, let's try to see what it says
-            // in any case we throw it to let it be processed properly
-            try {
-                const jsonError = await response.json()
-                throw new Error(jsonError);
-            } catch {
-                const txtError = await clone.text();
-                throw new Error(txtError);
-            }
-
+            return { result: r.text } as T;
         } catch(error) {
-            const end = new Date().getTime();
-            const executionTime = (end - s) / 1000;
-
-            const err = this.processError(error, response, executionTime, url);
-
-            throw err;
+            throw error;
         }
     }
-
-    private processError(error:any, response?:Response, executionTime?:number, url?:string) {
-        let errorMessage = null;
-
-        if(isString(error)) {
-            errorMessage = `[Strapi Client] ${error}`;
-        } else if(isObject(error)) {
-            const anyError = error as any;
-            if(anyError.error) {
-                errorMessage = anyError.error;
-            } else if(anyError.message) {
-                errorMessage = anyError.message;
-            } else {
-                errorMessage = "[Strapi Client] error: see error details";
-            }
-        } else {
-            errorMessage = "[Strapi Client] unknown error"
-        }
-
-        const err = new StrapiError(errorMessage);
-        err.executionTime = executionTime;
-        err.url = url;
-
-        if(response) {
-            err.statusCode = response.status;
-            err.statusMessage = response.statusText;
-        }
-
-        return err;
-    }
-
 }
 
 

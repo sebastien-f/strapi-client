@@ -1,6 +1,10 @@
 import { BaseRequestModifier } from "./BaseRequestModifier";
 
 export class IncludesDraftModifier extends BaseRequestModifier {
+    public alterHeaders(headers: any) {
+        return headers;
+    }
+
     public modifyBody(body: any) {
         return body;
     }

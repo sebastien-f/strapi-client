@@ -4,8 +4,11 @@ import { BaseRequestModifier } from "./BaseRequestModifier";
 type SortOrder = "asc"|"desc";
 
 export class SortModifier extends BaseRequestModifier {
+    public alterHeaders(headers: any) {
+        return headers;
+    }
 
-    public constructor(public field:string, public order:SortOrder) {
+    public constructor(public field:string, public sortOrder:SortOrder) {
         super();
     }
 
@@ -33,7 +36,7 @@ export class SortModifier extends BaseRequestModifier {
     private make():string {
         let str = this.field;
 
-        if(this.order === "desc") {
+        if(this.sortOrder === "desc") {
             str += ":desc";
         }
 

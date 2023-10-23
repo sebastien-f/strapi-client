@@ -1,4 +1,4 @@
-export type Methods = "GET"|"POST"|"PUT";
+export type Methods = "GET"|"POST"|"PUT"|"DELETE";
 export default function makeFetchOptions(method:Methods, body?:any, jwt?:string) {
     const options:any = {
         method,

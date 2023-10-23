@@ -1,6 +1,9 @@
 import { BaseRequestModifier } from "./BaseRequestModifier";
 
 export class FieldsModifier extends BaseRequestModifier {
+    public alterHeaders(headers: any) {
+        return headers;
+    }
 
     public constructor(public fields:Array<string>) {
         super();

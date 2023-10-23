@@ -3,6 +3,9 @@ import { BaseRequestModifier } from "./BaseRequestModifier";
 type FilterOperators = "$eq" | "$eqi" | "$ne" | "$nei" | "$lt" | "$lte" | "$gt" | "$gte" | "$in" | "$notIn" | "$contains" | "$notContains" | "$containsi" | "$notContainsi" | "$null" | "$notNull" | "$between" | "$startsWith" | "$startsWithi" | "$endsWith" | "$endsWithi" | "$or" | "$and" | "$not";
 
 export class FilterModifier extends BaseRequestModifier {
+    public alterHeaders(headers: any) {
+        return headers;
+    }
 
     public constructor(public field:string, public operator:FilterOperators, public operatorValue:any) {
         super();

@@ -2,6 +2,8 @@ import qs from "qs";
 import { BaseRequestModifier } from "../modifiers/BaseRequestModifier";
 import { Entry } from "./Entry";
 import { ContentReference } from "../reference/content";
+import { processModifiers } from "../helpers/processModifiers";
+import { Methods } from "../client/makeFetchOptions";
 
 type Find<T> = {
     data:Array<Entry<T>>;
@@ -15,21 +17,20 @@ type Find<T> = {
     }
 }
 
-export async function findOne<T>(content:ContentReference, requestModifiers:Array<BaseRequestModifier> = []):Promise<Entry<T>|null> {
-    const client = content.strapiClient;
-    let queryData:any = {};
-    let bodyData:any = null;
+type FindFirstOptions = {
+    method?:Methods;
+}
 
-    if(requestModifiers?.length) {
-        for(const rm of requestModifiers) {
-            queryData = rm.enrichQueryParameters(queryData);
-            bodyData = rm.modifyBody(bodyData);
-        }
-    }
+export async function findFirst<T>(content:ContentReference, requestModifiers:Array<BaseRequestModifier> = [], options:FindFirstOptions = {}):Promise<Entry<T>|null> {
+    /*
+    const client = content.strapiClient;
+
+    const [ queryData, bodyData, headers] = processModifiers(requestModifiers);
 
     const querystring = qs.stringify(queryData);
+    const method = options?.method || "GET";
 
-    const result = await client.run<Find<T>>(content.apiId, "GET", querystring, bodyData);
+    const result = await client.runOld<Find<T>>(content.apiPath, method, querystring, bodyData);
     if(result.meta.pagination.total == 0) return null;
 
     // S'il y en a plus que 1 on ne renvoie que le premier qui match, mais on warn
@@ -38,5 +39,7 @@ export async function findOne<T>(content:ContentReference, requestModifiers:Arra
     }
 
     return result.data[0];
+    */
+    throw new Error("To be reimplemented")
 
 }

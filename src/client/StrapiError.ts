@@ -1,4 +1,4 @@
-class StrapiError extends Error {
+export class StrapiError extends Error {
     public url?:string;
     public options?:RequestInit;
     public statusCode?:number;

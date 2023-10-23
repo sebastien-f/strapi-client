@@ -18,6 +18,10 @@ type PaginationByOffsetParameters = {
 export type PaginationParameters = PaginationByOffsetParameters | PaginationByPageParameters;
 
 export class PaginationModifier extends BaseRequestModifier {
+    public alterHeaders(headers: any) {
+        return headers;
+    }
+
     public constructor(public options:PaginationParameters) {
         super();
     }

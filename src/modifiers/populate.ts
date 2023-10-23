@@ -2,9 +2,14 @@ import { isArray, isString } from "lodash";
 import { BaseRequestModifier } from "./BaseRequestModifier";
 
 export class PopulateModifier extends BaseRequestModifier {
+    public alterHeaders(headers: any) {
+        return headers;
+    }
 
-    public constructor(public fields:Array<string>) {
+    public constructor(public fields:Array<string> = []) {
         super();
+
+        if(!this.fields) this.fields = [];
     }
 
     public modifyBody(body: any) {

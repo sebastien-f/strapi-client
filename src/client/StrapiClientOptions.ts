@@ -5,4 +5,6 @@ export type StrapiClientOptions = {
     prefix?:string;
     /** Display in the console the time used to run the query, default false */
     showRunTime?:boolean;
+    /** Displays the full auth token in error, default false (and keep it that way) */
+    keepFullAuthToken?:boolean;
 }

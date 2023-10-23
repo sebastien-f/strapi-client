@@ -1,7 +1,12 @@
 import { StrapiClient } from "../client/StrapiClient";
 
 export class ContentReference {
-    public constructor(public strapiClient:StrapiClient, public apiId:string) { }
+    /**
+     *
+     * @param strapiClient Strapi Client to match the
+     * @param apiPath
+     */
+    public constructor(public strapiClient:StrapiClient, public apiPath:string) { }
 }
 
 export function content(strapiClient:StrapiClient, apiId:string):ContentReference {
