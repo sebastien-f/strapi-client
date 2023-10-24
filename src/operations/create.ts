@@ -1,28 +1,28 @@
 import { BaseRequestModifier } from "../modifiers/BaseRequestModifier";
-import { ContentReference } from "../reference/content";
+import { BaseOperation, BaseOperationData } from "./BaseOperation";
 
-export async function create<T>(content:ContentReference, value:T, requestModifiers:Array<BaseRequestModifier> = []):Promise<T> {
-    throw new Error("To be reimplemented")
-
-    /*
-    const client = content.strapiClient;
-
-    let queryData:any = {};
-    let bodyData:any = {
-        data:value
-    };
-    let headers:any = {};
-
-    if(requestModifiers?.length) {
-        for(const rm of requestModifiers) {
-            queryData = rm.enrichQueryParameters(queryData);
-            bodyData = rm.modifyBody(bodyData);
-            headers = rm.alterHeaders(headers);
-        }
+export class CreateOperation<T> extends BaseOperation<T> {
+    public constructor(requestModifiers:Array<BaseRequestModifier> = []) {
+        super("CreateOperation", requestModifiers)
     }
 
+    public prepare(extraModifiers: Array<BaseRequestModifier> = []): BaseOperationData {
+        const modifiers = [
+            ...extraModifiers,
+            ...this.requestModifiers
+        ]
 
-    const result = await client.runOld<any>(content.apiPath, "POST", null, bodyData);
-    return result;
-    */
+        const method = this.getMethod(modifiers)?.method || "POST";
+
+        return {
+            body:this.getBody(modifiers),
+            headers:this.getHeaders(modifiers),
+            url:this.getUrl(modifiers),
+            method,
+        }
+    }
+}
+
+export function create(requestModifiers:Array<BaseRequestModifier> = []) {
+    return new CreateOperation(requestModifiers);
 }
