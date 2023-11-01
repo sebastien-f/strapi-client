@@ -8,12 +8,14 @@ export * from "./modifiers/apiPrefix";
 export * from "./modifiers/contentType";
 export * from "./modifiers/bodyValue";
 export * from "./modifiers/dataBody";
+export * from "./modifiers/entryId";
 export * from "./modifiers/fields";
 export * from "./modifiers/filter";
 export * from "./modifiers/includesDraft";
 export * from "./modifiers/method";
 export * from "./modifiers/pagination";
 export * from "./modifiers/populate";
+export * from "./modifiers/rawModifier";
 export * from "./modifiers/sort";
 export * from "./modifiers/withJWT";
 export * from "./operations/create";
@@ -24,3 +26,8 @@ export * from "./operations/list";
 export * from "./operations/raw";
 export * from "./operations/update";
 export * from "./flatten";
+
+
+
+
+

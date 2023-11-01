@@ -110,7 +110,6 @@ export class PopulateModifier extends BaseRequestModifier {
                     populate[actualField] = { count: true };
                 } else if(field.includes(".")) {
                     const obj = this.toObject(field);
-                    console.log("field", field, obj);
                     populate = {
                         ...populate,
                         ...obj,

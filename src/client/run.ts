@@ -3,7 +3,12 @@ import { BaseRequestModifier } from "../modifiers/BaseRequestModifier";
 import { BaseOperation } from "../operations/BaseOperation";
 import { StrapiError } from "./StrapiError";
 
-export async function run<T>(op:BaseOperation<T>, extraModifiers:Array<BaseRequestModifier> = []) {
+export type RunOptions = {
+    showDebug?:boolean;
+    showRuntime?:boolean;
+}
+
+export async function run<T>(op:BaseOperation<T>, extraModifiers:Array<BaseRequestModifier> = [], runOptions:RunOptions = {}) {
     const p = op.prepare(extraModifiers);
     const { body, headers, method, url } = p;
     const options:RequestInit = {
@@ -17,11 +22,14 @@ export async function run<T>(op:BaseOperation<T>, extraModifiers:Array<BaseReque
     const s = new Date().getTime();
 
     try {
-        console.log("run debug", url, options);
+        if(runOptions.showDebug) console.log(url, options);
+
         response = await fetch(url, options);
         const end = new Date().getTime();
         const executionTime = (end-s)/1000;
         const clone = response.clone();
+
+        if(runOptions.showRuntime) console.log("run ran in", executionTime);
 
         if(response.ok) {
             const clone = response.clone();

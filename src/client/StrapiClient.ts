@@ -18,12 +18,12 @@ import { JwtModifier } from "../modifiers/withJWT";
 const defaultOptions:StrapiClientOptions = {
     baseUrl:"http://localhost:1337",
     prefix:"/api/",
-    showRunTime:false,
+    showRuntime:false,
+    showDebug:false,
     keepFullAuthToken:false,
 }
 
 class StrapiClient {
-    /** @deprecated */
     private options:StrapiClientOptions;
     private jwToken:string = null as any as string;
     private user:AuthUser = null as any as AuthUser;
@@ -78,13 +78,14 @@ class StrapiClient {
             bodyValue("password", password),
             jsonContentType(),
             method("POST"),
-            ...extraModifiers,
+            // we can't send a jwt with the auth
+            ...extraModifiers.filter(x => !(x instanceof JwtModifier)),
         ])
 
         try {
             const r = await run(meRequest, this.clientModifiers);
 
-            if(this.options.showRunTime) console.log(`[localAuth] ran in ${r.executionTime} seconds.`);
+            if(this.options.showRuntime) console.log(`[localAuth] ran in ${r.executionTime} seconds.`);
 
             if(r.type == "text")  {
                 const sErr = new StrapiError("Local auth error: " + r.text);
@@ -121,9 +122,9 @@ class StrapiClient {
 
     public async run<T>(op:BaseOperation<T>):Promise<T> {
         try {
-            const r = await run(op, this.clientModifiers);
+            const r = await run(op, this.clientModifiers, { showDebug: this.options.showDebug, showRuntime: this.options.showRuntime});
             if(r.type == "json") return r.json as T;
-
+            if(this.options.showRuntime) console.log("ran in", r.executionTime);
             return { result: r.text } as T;
         } catch(error) {
             throw error;
