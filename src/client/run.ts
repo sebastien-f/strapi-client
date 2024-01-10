@@ -6,6 +6,7 @@ import { StrapiError } from "./StrapiError";
 export type RunOptions = {
     showDebug?:boolean;
     showRuntime?:boolean;
+    timeout?:number;
 }
 
 export async function run<T>(op:BaseOperation<T>, extraModifiers:Array<BaseRequestModifier> = [], runOptions:RunOptions = {}) {
@@ -24,7 +25,25 @@ export async function run<T>(op:BaseOperation<T>, extraModifiers:Array<BaseReque
     try {
         if(runOptions.showDebug) console.log(url, options);
 
-        response = await fetch(url, options);
+        let promise:Promise<Response> = null as any as Promise<Response>;
+
+        if(runOptions.timeout && !isNaN(runOptions.timeout)) {
+            if(AbortSignal.timeout) {
+                // RN hermes has no support for this
+                options.signal = AbortSignal.timeout(runOptions.timeout);
+                promise = fetch(url, options);
+            } else {
+                const controller = new AbortController();
+                options.signal = controller.signal;
+                if(options.signal) options.signal.addEventListener("abort", () => controller.abort);
+                const timeout = setTimeout(() => controller.abort(), runOptions.timeout);
+                promise = fetch(url, options).finally(() => clearTimeout(timeout));
+            }
+        } else {
+            promise = fetch(url, options);
+        }
+
+        response = await promise;
         const end = new Date().getTime();
         const executionTime = (end-s)/1000;
         const clone = response.clone();

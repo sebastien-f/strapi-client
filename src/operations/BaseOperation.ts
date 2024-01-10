@@ -1,6 +1,7 @@
 import urlcat, { join } from "urlcat";
 import { Methods } from "../client/makeFetchOptions";
 import { BaseRequestModifier } from "../modifiers/BaseRequestModifier";
+import { UrlParameters } from "../types";
 
 export type BaseOperationData = {
     body:any;

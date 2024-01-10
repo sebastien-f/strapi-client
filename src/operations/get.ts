@@ -1,3 +1,4 @@
+import { sortBy } from "lodash";
 import { BaseRequestModifier } from "../modifiers/BaseRequestModifier";
 import { BaseOperation, BaseOperationData } from "./BaseOperation";
 
@@ -7,10 +8,10 @@ export class GetOperation<T> extends BaseOperation<T> {
     }
 
     public prepare(extraModifiers:Array<BaseRequestModifier> = []): BaseOperationData {
-        const modifiers = [
+        const modifiers = sortBy([
             ...extraModifiers,
             ...this.requestModifiers
-        ]
+        ], ["order"]);
 
         const method = this.getMethod(modifiers)?.method || "GET";
 

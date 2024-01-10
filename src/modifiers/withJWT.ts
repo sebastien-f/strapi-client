@@ -7,14 +7,16 @@ export class JwtModifier extends BaseRequestModifier {
     }
 
     public override alterHeaders(headers: any):any {
-        return {
+        const newHeaders = {
             ...headers,
-            Authorization:`Bearer ${this.jwt}`,
-        };
+            Authorization:this.jwt ? `Bearer ${this.jwt}` : null,
+        }
+
+        return newHeaders;
     }
 }
 
-export function withJWT(jwt:string):JwtModifier {
+export function withJWT(jwt:string, order:number = 0):JwtModifier {
 
     const sm = new JwtModifier(jwt);
 

@@ -1,14 +1,31 @@
-import { ContentReference } from "../reference/content";
+import { sortBy } from "lodash";
+import { BaseRequestModifier } from "../modifiers/BaseRequestModifier";
+import { BaseOperation, BaseOperationData } from "./BaseOperation";
 
-export async function update<T>(content:ContentReference, id:number, value:Partial<T>):Promise<any> {
-    /*
-    const client = content.strapiClient;
-    const bodyData = {
-        data:value
-    };
+export class UpdateOperation<T> extends BaseOperation<T> {
+    public constructor(requestModifiers:Array<BaseRequestModifier> = []) {
+        super("UpdateOperation", requestModifiers)
+    }
 
-    const result = await client.runOld<any>(content.apiPath, "PUT", null, bodyData, id);
-    return result;
-    */
-   throw new Error("To be reimplemented")
+    public prepare(extraModifiers:Array<BaseRequestModifier> = []): BaseOperationData {
+        const modifiers = sortBy([
+            ...extraModifiers,
+            ...this.requestModifiers
+        ], ["order"]);
+
+
+        const method = this.getMethod(modifiers)?.method || "PUT";
+
+        return {
+            body:this.getBody(modifiers),
+            headers:this.getHeaders(modifiers),
+            url:this.getUrl(modifiers),
+            method,
+        }
+    }
 }
+
+export function update<T>(requestModifiers:Array<BaseRequestModifier> = []) {
+    return new UpdateOperation<T>(requestModifiers);
+}
+

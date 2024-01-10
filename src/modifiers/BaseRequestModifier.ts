@@ -1,3 +1,5 @@
+import { UrlParameters } from "../types";
+
 export abstract class BaseRequestModifier {
     public order:number = 0;
 

@@ -1,5 +1,3 @@
-import { isEmpty, isString, isObject } from "lodash";
-import makeFetchOptions, { Methods } from "./makeFetchOptions";
 import { StrapiClientOptions } from "./StrapiClientOptions";
 import { StrapiError } from "./StrapiError";
 import { BaseOperation } from "../operations/BaseOperation";
@@ -8,12 +6,12 @@ import { apiBaseUrl } from "../modifiers/apiBaseUrl";
 import { apiPrefix } from "../modifiers/apiPrefix";
 import { run } from "./run";
 import { apiEndpoint } from "../modifiers/apiEndpoint";
-import { get } from "../operations/get";
 import { bodyValue } from "../modifiers/bodyValue";
 import { method } from "../modifiers/method";
 import { raw } from "../operations/raw";
 import { jsonContentType } from "../modifiers/contentType";
 import { JwtModifier } from "../modifiers/withJWT";
+import { stripJwtModifier } from "../helpers/stripJwtModifier";
 
 const defaultOptions:StrapiClientOptions = {
     baseUrl:"http://localhost:1337",
@@ -79,11 +77,15 @@ class StrapiClient {
             jsonContentType(),
             method("POST"),
             // we can't send a jwt with the auth
-            ...extraModifiers.filter(x => !(x instanceof JwtModifier)),
+            ...stripJwtModifier(extraModifiers),
         ])
 
         try {
-            const r = await run(meRequest, this.clientModifiers);
+            const r = await run(meRequest, stripJwtModifier(this.clientModifiers), {
+                timeout:this.options.timeout,
+                showDebug:this.options.showDebug,
+                showRuntime:this.options.showRuntime,
+            });
 
             if(this.options.showRuntime) console.log(`[localAuth] ran in ${r.executionTime} seconds.`);
 

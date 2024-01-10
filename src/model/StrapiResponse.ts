@@ -18,6 +18,6 @@ type WithData<TData> = {
     data:TData;
 }
 
-type StrapiStandardEntry<TAttributes> = WithId & WithAttributes<TAttributes>;
-type StrapiStandardEntriesData<TAttributes> = Array<StrapiStandardEntry<TAttributes>>;
-type StrapiStandardResponse<TData, TMeta> = WithData<TData> & WithMeta<TMeta>;
+type Entry<TAttributes> = WithId & WithAttributes<TAttributes>;
+type Entries<TAttributes> = Array<Entry<TAttributes>>;
+type StrapiResponse<TData, TMeta> = WithData<TData> & WithMeta<TMeta>;

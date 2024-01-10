@@ -1,3 +1,4 @@
+import { UrlParameters } from "../types";
 import { BaseRequestModifier } from "./BaseRequestModifier";
 
 export class ApiPrefixModifer extends BaseRequestModifier {

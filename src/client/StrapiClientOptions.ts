@@ -9,4 +9,6 @@ export type StrapiClientOptions = {
     showDebug?:boolean;
     /** Displays the full auth token in error, default false (and keep it that way) */
     keepFullAuthToken?:boolean;
+    /** Timeout for the requests */
+    timeout?:number;
 }

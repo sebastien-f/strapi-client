@@ -1,4 +1,5 @@
 import { Methods } from "../client/makeFetchOptions";
+import { UrlParameters } from "../types";
 import { BaseRequestModifier } from "./BaseRequestModifier";
 
 export type RawModifierParameters = {

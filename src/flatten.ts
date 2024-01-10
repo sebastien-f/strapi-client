@@ -1,10 +1,12 @@
-import { isArray, isObject, isPlainObject } from "lodash";
+import { isArray, isPlainObject } from "lodash";
 import { Entry } from "./operations/Entry";
 
 type Flattened<T> = T & { id: number };
 
 export function flatten<T>(entry:Entry<T>, recursive?:boolean):Flattened<T> {
     recursive = !!recursive;
+
+    if(!entry) return entry;
 
     if(entry.id && entry.attributes) {
         let attributes = entry.attributes;
@@ -14,8 +16,12 @@ export function flatten<T>(entry:Entry<T>, recursive?:boolean):Flattened<T> {
             const o = (attributes as any);
             for(const key of keys) {
                 const value = o[key];
+                const hasDataKey = value && Object.keys(value).includes("data");
 
-                if(value && value.data) {
+                if(value === null || value === undefined) {
+                    o[key] = value;
+                }
+                else if(hasDataKey) {
                     const newValue = flatten(value.data, recursive);
                     o[key] = newValue;
                 } else if(isPlainObject(value)) {

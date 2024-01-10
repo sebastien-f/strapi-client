@@ -33,9 +33,6 @@ describe('Operations', () => {
             ]);
 
             const p = l.prepare();
-
-            console.log("p",p);
-
         });
 
     })

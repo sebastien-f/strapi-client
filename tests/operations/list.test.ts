@@ -30,7 +30,7 @@ describe('Operations', () => {
                 apiPrefix("api"),
                 apiEndpoint("establishments"),
                 pagination({ type:"page", pageSize:5 }),
-                withJWT(""),
+                withJWT("eyJhbGciOiJ..."),
             ]);
             const p = l.prepare();
 
