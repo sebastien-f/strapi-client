@@ -1,6 +1,6 @@
 {
   "name": "@sebastien-f/strapi-client",
-  "version": "0.0.49",
+  "version": "0.0.50",
   "description": "Client to handle strapi calls",
   "main": "dist/index.js",
   "scripts": {

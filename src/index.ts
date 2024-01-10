@@ -21,6 +21,7 @@ export * from "./modifiers/rawModifier";
 export * from "./modifiers/sort";
 export * from "./modifiers/withJWT";
 export * from "./operations/create";
+export * from "./operations/delete";
 export * from "./operations/find";
 export * from "./operations/findFirst";
 export * from "./operations/get";
